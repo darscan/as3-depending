@@ -220,6 +220,41 @@ package as3.scope
 			scope.register(IVehicle, AutoSetterCar);
 			assertThat(scope.getValue(IVehicle), hasProperty("name", "Foo"));
 		}
+
+		/**
+		 * A Scope can inherit providers from a chain of parent Scopes.
+		 */
+
+		[Test]
+		public function childScope_inherits_from_parentScope():void
+		{
+			scope.register("id", 5);
+			const child:Scope = new Scope();
+			child.parent = scope;
+			assertThat(child.getValue("id"), equalTo(5));
+		}
+
+		[Test]
+		public function childScope_can_override_provider_from_parentScope():void
+		{
+			scope.register("id", 5);
+			const child:Scope = new Scope();
+			child.parent = scope;
+			child.register("id", 10);
+			assertThat(scope.getValue("id"), equalTo(5));
+			assertThat(child.getValue("id"), equalTo(10));
+		}
+
+		[Test]
+		public function childScope_can_revert_to_provider_from_parentScope():void
+		{
+			scope.register("id", 5);
+			const child:Scope = new Scope();
+			child.parent = scope;
+			child.register("id", 10);
+			child.unregister("id");
+			assertThat(child.getValue("id"), equalTo(5));
+		}
 	}
 }
 
