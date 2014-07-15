@@ -4,6 +4,7 @@ package as3.scope
 	import flash.display.Sprite;
 
 	import org.hamcrest.assertThat;
+	import org.hamcrest.core.not;
 	import org.hamcrest.object.equalTo;
 	import org.hamcrest.object.hasProperty;
 	import org.hamcrest.object.instanceOf;
@@ -65,16 +66,29 @@ package as3.scope
 		}
 
 		/**
-		 * Singleton behaviour by default for constructed Class.
+		 * Singleton behaviour by default.
 		 */
 
 		[Test]
-		public function id_for_ClassValue_returns_same_Instance_of_Class():void
+		public function singleton_behaviour_by_default():void
 		{
 			scope.register(DisplayObject, Sprite);
 			const instance1:DisplayObject = scope.getValue(DisplayObject);
 			const instance2:DisplayObject = scope.getValue(DisplayObject);
 			assertThat(instance1, equalTo(instance2));
+		}
+
+		/**
+		 * Singleton behaviour can be disabled.
+		 */
+
+		[Test]
+		public function singleton_behaviour_can_be_disabled():void
+		{
+			scope.register(DisplayObject, { $class: Sprite, $cache: false });
+			const instance1:DisplayObject = scope.getValue(DisplayObject);
+			const instance2:DisplayObject = scope.getValue(DisplayObject);
+			assertThat(instance1, not(equalTo(instance2)));
 		}
 
 		/**
