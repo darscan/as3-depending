@@ -5,18 +5,20 @@ package as3.scope
 		public var parent:Scope;
 
 		/**
-		 * Registers a provider for a given identity.
+		 * Registers or creates a provider for a given identity (name or Type).
 		 *
-		 * If the provider is a Function reference it is used to provide values.
+		 * If the config is a Function reference it is used to provide values.
 		 *
-		 * Otherwise, a provider for the identity is automatically generated.
+		 * Otherwise, a provider is automatically generated from the config.
 		 *
-		 * @param id Identity
-		 * @param provider Provider Function, Value or Configuration
+		 * When the config is omitted the `id` itself is treated as the config.
+		 *
+		 * @param id Identity. String name, or Type (Interface or Class).
+		 * @param config Provider Function, Class, Value or Configuration.
 		 */
-		public function register(id:Object, provider:Object = null):void
+		public function register(id:Object, config:Object = null):void
 		{
-			setProvider(id, extractProvider(id, provider));
+			setProvider(id, parseConfig(id, config));
 		}
 
 		public function unregister(id:Object):void
@@ -47,12 +49,12 @@ package as3.scope
 			return p;
 		}
 
-		private var recipeParser:Recipe;
+		private var parser:ConfigParser;
 
-		protected function extractProvider(id:Object, recipe:Object):Object
+		private function parseConfig(id:Object, config:Object):Object
 		{
-			if (recipeParser == null) recipeParser = new Recipe(this);
-			return recipeParser.parse(id, recipe);
+			if (parser == null) parser = new ConfigParser(this);
+			return parser.getProvider(id, config);
 		}
 	}
 }

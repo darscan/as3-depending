@@ -7,76 +7,72 @@ package as3.scope
 	 *
 	 * If the given value is a Function reference it is returned as-is.
 	 *
-	 * If the value is null, the identity itself is inspected.
+	 * If the config is null, the identity itself is inspected.
 	 */
-	internal final class Recipe
+	internal final class ConfigParser
 	{
 		private var scope:Scope;
 
-		public function Recipe(scope:Scope)
+		public function ConfigParser(scope:Scope) { this.scope = scope; }
+
+		public function getProvider(id:Object, config:Object = null):Object
 		{
-			this.scope = scope;
-		}
+			// Allow shorthand, e.g. id is a Class with annotations
+			if (config === null) config = id;
 
-		public function parse(id:Object, recipe:Object):*
-		{
-			// allow shorthand, e.g. id is a class with annotations
-			if (recipe === null) recipe = id;
+			// Start with the config itself
+			var provider:* = config;
 
-			// start with the recipe
-			var provider:* = recipe;
-
-			// the simplest provider is a function reference
+			// Return function provider
 			if (provider is Function) return provider;
 
-			// or, try to build a provider by reading the recipe
-			// for class and dependency annotations
-			const cls:Class = getClass(id, recipe);
-			if (cls != null) return getClassProvider(cls, id, recipe) as Function;
+			// Return instance generating provider
+			const cls:Class = getClass(id, config);
+			if (cls != null) return getInstanceProviderFor(cls, id, config) as Function;
 
-			// the provider can also be a plain value object
+			// Return plain value provider
 			return provider;
 		}
 
-		private static function getClass(id:Object, recipe:Object):Class
+		private static function getClass(id:Object, config:Object):Class
 		{
-			if ('$class' in recipe) return recipe['$class'] as Class;
-			if (recipe == null) return id as Class;
-			return recipe as Class;
+			if ('$class' in config) return config['$class'] as Class;
+			if (config == null) return id as Class;
+			return config as Class;
 		}
 
-		private function getClassProvider(cls:Class, id:Object, recipe:Object):Function
+		private static function isSingleton(config:Object):Boolean
 		{
-			const provider:Function = createClassProvider(cls, recipe);
-			return isSingleton(recipe) ? cacheProvider(id, provider) : provider;
+			return '$cache' in config ? config['$cache'] : true;
 		}
 
-		private static function isSingleton(recipe:Object):Boolean
+		private function getInstanceProviderFor(cls:Class, id:Object, config:Object):Function
 		{
-			return '$cache' in recipe ? recipe['$cache'] : true;
+			const provider:Function = generateConstructor(cls, config);
+			return isSingleton(config) ? cacheProvider(id, provider) : provider;
 		}
 
-		private function createClassProvider(cls:Class, recipe:Object):Function
+		private function generateConstructor(cls:Class, config:Object):Function
 		{
-			const injRecipe:* = '$inject' in recipe ? recipe['$inject'] : null;
+			const injectConfig:* = '$inject' in config ? config['$inject'] : null;
 
-			if (injRecipe is Function)
+			if (injectConfig is Function)
 			{
-				// custom constructor
-				return injRecipe as Function;
+				// Generated Provider 1: Custom Constructor Function
+				return injectConfig as Function;
 			}
-			else if (injRecipe is Array)
+			else if (injectConfig is Array)
 			{
-				// constructor injection
-				return function ():* { return construct(cls, inject(injRecipe, [])) };
+				// Generated Provider 2: Constructor Injection
+				return function ():* { return construct(cls, inject(injectConfig, [])) };
 			}
-			else if (injRecipe is Object)
+			else if (injectConfig is Object)
 			{
-				// simple constructor with setter injection
-				return function ():* { return inject(injRecipe, new cls()) };
+				// Generated Provider 3: Simple Constructor, Setter Injection
+				return function ():* { return inject(injectConfig, new cls()) };
 			}
 
-			// simple constructor
+			// Generated Provider 3: Simple Constructor, No Injection
 			return function ():* { return new cls() };
 		}
 
@@ -96,7 +92,7 @@ package as3.scope
 			for (var key:String in ids)
 			{
 				const id:Object = ids[key];
-				target[key] = 'val' in id ? id['val'] : scope.getValue(id);
+				target[key] = '$value' in id ? id['$value'] : scope.getValue(id);
 			}
 			return target;
 		}

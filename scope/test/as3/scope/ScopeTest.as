@@ -178,9 +178,7 @@ package as3.scope
 		{
 			scope.register(IVehicle, {
 				$class: Car,
-				$inject: [
-					{ val: "Foo" }
-				]
+				$inject: [{ $value: "Foo" }]
 			});
 			assertThat(scope.getValue(IVehicle), hasProperty("name", "Foo"));
 		}
@@ -201,7 +199,7 @@ package as3.scope
 		{
 			scope.register(IVehicle, {
 				$class: Car,
-				$inject: { name: { val: "Foo" } }
+				$inject: { name: { $value: "Foo" } }
 			});
 			assertThat(scope.getValue(IVehicle), hasProperty("name", "Foo"));
 		}
